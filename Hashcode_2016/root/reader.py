@@ -5,14 +5,14 @@ import random
 filename = 'busy_day'
 
 class Reader(object):
-	def __init__(self, ROWS, COLS, D, DEADLINE, MAX_LOAD, P, PRODUCT_WEIGTHS, W, WAREHOUSES, C, ORDERS):
+	def __init__(self, ROWS, COLS, D, DEADLINE, MAX_LOAD, P, PRODUCT_WEIGHTS, W, WAREHOUSES, C, ORDERS):
 		self.ROWS = ROWS 
 		self.COLS = COLS 
 		self.D = D # number of drones
 		self.DEADLINE = DEADLINE # time
 		self.MAX_LOAD = MAX_LOAD # per drone
 		self.P = P # number of product types
-		self.PRODUCT_WEIGTHS = PRODUCT_WEIGTHS # array of weigths
+		self.PRODUCT_WEIGHTS = PRODUCT_WEIGHTS # array of weigths
 		self.W = W # number of warehouses
 		self.WAREHOUSES = WAREHOUSES # array of warehouses
 		self.C = C # number of customer orders
@@ -25,11 +25,14 @@ class Warehouse(object):
 		self.ITEMS = [0]*p
 
 class Order(object):
-	def __init__(self, R, C, p):
+	def __init__(self, id, R, C, p):
+		self.ID = id
 		self.R = R # num rows
 		self.C = C # num slots per row
 		self.L = 0 # num of items
 		self.ITEMS = [0] * p
+		self.weight = 0
+
 
 class Load(object):
 	def __init__(self, drone, warehouse, product, number):
@@ -57,7 +60,7 @@ def readFile(filename):
 	curWharehouse = 0
 	curOrder = 0
 	P =0
-	PRODUCT_WEIGTHS = []
+	PRODUCT_WEIGHTS = []
 	WAREHOUSES = []
 	ORDERS = []
 	with open('data/' + filename + '.in') as f:
@@ -71,7 +74,7 @@ def readFile(filename):
 			elif index == 1:
 				P = line[0]
 			elif index == 2:
-				PRODUCT_WEIGTHS = line
+				PRODUCT_WEIGHTS = line
 			elif index == 3:
 				W = line[0]
 			elif index < 2*W + 4 and subIndex == 0:
@@ -85,7 +88,7 @@ def readFile(filename):
 				C = line[0]
 				subIndex = 0
 			elif index < (2*W + 4 + 1 + 3 * C) and subIndex == 0:
-				ORDERS.append(Order(line[0], line[1], P))
+				ORDERS.append(Order(curOrder, line[0], line[1], P))
 				subIndex = 1
 			elif index < (2*W + 4 + 1 + 3 * C) and subIndex == 1:
 				ORDERS[curOrder].L = line[0]
@@ -93,10 +96,13 @@ def readFile(filename):
 			elif index < (2*W + 4 + 1 + 3 * C) and subIndex == 2:
 				for i in range(len(line)):
 					ORDERS[curOrder].ITEMS[line[i]] += 1
+					ORDERS[curOrder].weight += ORDERS[curOrder].ITEMS[line[i]] * PRODUCT_WEIGHTS[line[i]]
 				curOrder += 1
 				subIndex = 0
 			index += 1
 
-	return Reader(ROWS, COLS, D, DEADLINE, MAX_LOAD, P, PRODUCT_WEIGTHS, W, WAREHOUSES, C, ORDERS)
+	return Reader(ROWS, COLS, D, DEADLINE, MAX_LOAD, P, PRODUCT_WEIGHTS, W, WAREHOUSES, C, ORDERS)
 
 reader = readFile(filename)
+for order in reader.ORDERS:
+	print order.weight
