@@ -33,6 +33,7 @@ class Order(object):
 		self.L = 0 # num of items
 		self.ITEMS = [0] * p
 		self.weight = 0
+		self.rawItems = []
 
 class Load(object):
 	def __init__(self, drone, warehouse, product, number):
@@ -96,6 +97,7 @@ def readFile(filename):
 			elif index < (2*W + 4 + 1 + 3 * C) and subIndex == 2:
 				for i in range(len(line)):
 					ORDERS[curOrder].ITEMS[line[i]] += 1
+					ORDERS[curOrder].rawItems.append(line[i])
 					ORDERS[curOrder].weight += ORDERS[curOrder].ITEMS[line[i]] * PRODUCT_WEIGHTS[line[i]]
 				curOrder += 1
 				subIndex = 0
@@ -104,5 +106,5 @@ def readFile(filename):
 	return Reader(ROWS, COLS, D, DEADLINE, MAX_LOAD, P, PRODUCT_WEIGHTS, W, WAREHOUSES, C, ORDERS)
 
 reader = readFile(filename)
-for order in reader.ORDERS:
-	print order.weight
+
+print reader.ORDERS[0].rawItems
