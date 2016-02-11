@@ -17,7 +17,7 @@ class Reader(object):
 		self.WAREHOUSES = WAREHOUSES # array of warehouses
 		self.C = C # number of customer orders
 		self.ORDERS = ORDERS
-
+   
 class Warehouse(object):
 	def __init__(self, id, R, C, p):
 		self.ID = id
@@ -33,7 +33,6 @@ class Order(object):
 		self.L = 0 # num of items
 		self.ITEMS = [0] * p
 		self.weight = 0
-
 
 class Load(object):
 	def __init__(self, drone, warehouse, product, number):
