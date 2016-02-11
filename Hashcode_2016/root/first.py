@@ -18,6 +18,7 @@ class Drone(object):
     self.nextAvailableTime = 0 # available now
     self.commands = []
     self.ID = ID
+    self.weight = 0
  
 class Job(object):
   def __init__(self, R, C, productType, orderID):
@@ -37,6 +38,8 @@ def doAllJobs(reader):
   
   sortedOrders = reader.ORDERS[:]
   sortedOrders.sort(cmp=lambda x,y: cmp(x.weight, y.weight))
+  #sortedOrders.sort(cmp=lambda x,y: cmp(x.L, y.L))
+  
   
   allJobs = []
   for order in sortedOrders:
@@ -55,71 +58,103 @@ def doAllJobs(reader):
 
   for t in range(0, reader.T):
     
-    avDrones = availableWorkers(reader, drones, t)
-    
-    while len(avDrones)>0 and len(allJobs)>0:
-      job = allJobs[0]
-      closestWHindex = closestWwithP(job.productType, reader, job.R, job.C)
-      wh = reader.WAREHOUSES[closestWHindex]
-      
-      closestDrone = None
-      minDist = 1000*1000*1000
-      jobTime = 0
-      
-      for drone in avDrones:
-        d = dist(wh.R, wh.C, drone.R, drone.C)
-        
-        t1 = dist(drone.R, drone.C, wh.R, wh.C) 
-        t2 = dist(wh.R, wh.C, job.R, job.C) 
-        _jobTime = t1 + t2 + 2
-        
-        if d< minDist and t+_jobTime<reader.T:
-          
-          minDist=d
-          closestDrone = drone
-          jobTime = _jobTime
-      
-      if closestDrone!=None:
-        drone = closestDrone
-        allJobs.pop(0)
-        commands.append(Load(drone.ID, closestWHindex, job.productType, 1))
-        wh.ITEMS[job.productType] -= 1
-        commands.append(Deliver(drone.ID, job.orderID, job.productType, 1))
- 
-        drone.R = job.R
-        drone.C = job.C
-        drone.nextAvailableTime += jobTime + 1
-      
-      avDrones = availableWorkers(reader, drones, t)
-    
-      
-      
-    
-#     for drone in avDrones:
-#       
-#       
-#       if len(allJobs) == 0:
-#         continue
-#       
+     #avDrones = availableWorkers(reader, drones, t)
+#     
+#     tookJob = True
+#     while tookJob and len(avDrones)>0 and len(allJobs)>0:
 #       job = allJobs[0]
-#       
-#       closestWHindex = closestWwithP(job.productType, reader, drone.R, drone.C)
+#       closestWHindex = closestWwithP(job.productType, reader, job.R, job.C)
 #       wh = reader.WAREHOUSES[closestWHindex]
 #       
-#       t1 = dist(drone.R, drone.C, wh.R, wh.C) 
-#       t2 = dist(wh.R, wh.C, job.R, job.C) 
-#       jobTime = t1 + t2 + 2
+#       closestDrone = None
+#       minDist = 1000*1000*1000
+#       jobTime = 0
 #       
-#       if t + jobTime < reader.T:
+#       for drone in avDrones:
+#         d = dist(wh.R, wh.C, drone.R, drone.C)
+#         
+#         t1 = dist(drone.R, drone.C, wh.R, wh.C) 
+#         t2 = dist(wh.R, wh.C, job.R, job.C) 
+#         _jobTime = t1 + t2 + 2
+#         
+#         if d< minDist and t+_jobTime<reader.T:
+#           
+#           minDist=d
+#           closestDrone = drone
+#           jobTime = _jobTime
+#       
+#       if closestDrone!=None:
+#         drone = closestDrone
 #         allJobs.pop(0)
 #         commands.append(Load(drone.ID, closestWHindex, job.productType, 1))
 #         wh.ITEMS[job.productType] -= 1
 #         commands.append(Deliver(drone.ID, job.orderID, job.productType, 1))
-# 
+#  
 #         drone.R = job.R
 #         drone.C = job.C
 #         drone.nextAvailableTime += jobTime + 1
-  
+#       else:
+#         tookJob = False
+#         
+#       avDrones = availableWorkers(reader, drones, t)
+#     
+#       
+      
+    avDrones = availableWorkers(reader, drones, t)
+      
+    for drone in avDrones:
+       
+       
+      if len(allJobs) == 0:
+        continue
+       
+      job = allJobs[0]
+       
+      closestWHindex = closestWwithP(job.productType, reader, drone.R, drone.C)
+      wh = reader.WAREHOUSES[closestWHindex]
+       
+      t1 = dist(drone.R, drone.C, wh.R, wh.C) 
+      t2 = dist(wh.R, wh.C, job.R, job.C) 
+      jobTime = t1 + t2 + 2
+       
+      if t + jobTime < reader.T:
+        
+        tripJobs = [job]
+        peekIdx = 1
+        drone.weight = reader.PRODUCT_WEIGHTS[job.productType]
+        wh.ITEMS[job.productType] -= 1
+            
+        while peekIdx < len(allJobs) and allJobs[peekIdx].orderID == job.orderID:
+          nextJob = allJobs[peekIdx]
+          if t + jobTime + 2 < reader.T and wh.ITEMS[nextJob.productType]>0 and reader.PRODUCT_WEIGHTS[nextJob.productType] + drone.weight<=reader.MAX_LOAD :
+            tripJobs.append(nextJob)
+            wh.ITEMS[nextJob.productType] -= 1
+            jobTime+=2
+            drone.weight += reader.PRODUCT_WEIGHTS[nextJob.productType]
+            peekIdx+=1  
+          else:
+            break
+          
+          
+        #print len(tripJobs)
+        
+        countsPT = [0]*reader.P
+        for tripJob in tripJobs:
+          allJobs.pop(0)
+          countsPT[tripJob.productType]+=1
+        
+        for pT in range(0, len(countsPT)):
+          if countsPT[pT]>0:
+            commands.append(Load(drone.ID, closestWHindex, pT, countsPT[pT]))
+        for pT in range(0, len(countsPT)):
+          if countsPT[pT]>0:
+            commands.append(Deliver(drone.ID, job.orderID, pT, countsPT[pT]))
+        
+        drone.R = job.R
+        drone.C = job.C
+        drone.nextAvailableTime += jobTime + 1
+        drone.weight = 0
+        
   return commands
 
 #closest warehouse with an item of type productType
