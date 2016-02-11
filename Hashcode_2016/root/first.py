@@ -103,5 +103,5 @@ def closestWwithP(productType, reader, r, c):
   
 
 if __name__ == '__main__':
-  
   pass
+  
