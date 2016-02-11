@@ -57,28 +57,68 @@ def doAllJobs(reader):
     
     avDrones = availableWorkers(reader, drones, t)
     
-    for drone in avDrones:
-      if len(allJobs) == 0:
-        continue
-      
+    while len(avDrones)>0 and len(allJobs)>0:
       job = allJobs[0]
-      
-      closestWHindex = closestWwithP(job.productType, reader, drone.R, drone.C)
+      closestWHindex = closestWwithP(job.productType, reader, job.R, job.C)
       wh = reader.WAREHOUSES[closestWHindex]
       
-      t1 = dist(drone.R, drone.C, wh.R, wh.C) 
-      t2 = dist(wh.R, wh.C, job.R, job.C) 
-      jobTime = t1 + t2 + 2
+      closestDrone = None
+      minDist = 1000*1000*1000
+      jobTime = 0
       
-      if t + jobTime < reader.T:
+      for drone in avDrones:
+        d = dist(wh.R, wh.C, drone.R, drone.C)
+        
+        t1 = dist(drone.R, drone.C, wh.R, wh.C) 
+        t2 = dist(wh.R, wh.C, job.R, job.C) 
+        _jobTime = t1 + t2 + 2
+        
+        if d< minDist and t+_jobTime<reader.T:
+          
+          minDist=d
+          closestDrone = drone
+          jobTime = _jobTime
+      
+      if closestDrone!=None:
+        drone = closestDrone
         allJobs.pop(0)
         commands.append(Load(drone.ID, closestWHindex, job.productType, 1))
         wh.ITEMS[job.productType] -= 1
         commands.append(Deliver(drone.ID, job.orderID, job.productType, 1))
-
+ 
         drone.R = job.R
         drone.C = job.C
         drone.nextAvailableTime += jobTime + 1
+      
+      avDrones = availableWorkers(reader, drones, t)
+    
+      
+      
+    
+#     for drone in avDrones:
+#       
+#       
+#       if len(allJobs) == 0:
+#         continue
+#       
+#       job = allJobs[0]
+#       
+#       closestWHindex = closestWwithP(job.productType, reader, drone.R, drone.C)
+#       wh = reader.WAREHOUSES[closestWHindex]
+#       
+#       t1 = dist(drone.R, drone.C, wh.R, wh.C) 
+#       t2 = dist(wh.R, wh.C, job.R, job.C) 
+#       jobTime = t1 + t2 + 2
+#       
+#       if t + jobTime < reader.T:
+#         allJobs.pop(0)
+#         commands.append(Load(drone.ID, closestWHindex, job.productType, 1))
+#         wh.ITEMS[job.productType] -= 1
+#         commands.append(Deliver(drone.ID, job.orderID, job.productType, 1))
+# 
+#         drone.R = job.R
+#         drone.C = job.C
+#         drone.nextAvailableTime += jobTime + 1
   
   return commands
 
@@ -120,4 +160,3 @@ if __name__ == '__main__':
       f.write(str(len(commands)) + "\n")
       for com in commands:
         f.write(com.printCommand() + "\n")
-    

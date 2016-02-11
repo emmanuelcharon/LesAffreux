@@ -64,7 +64,7 @@ def readFile(filename):
 	PRODUCT_WEIGHTS = []
 	WAREHOUSES = []
 	ORDERS = []
-	with open('data/' + filename + '.in') as f:
+	with open('../data/' + filename + '.in') as f:
 		for line in f:
 			line = line.split(' ')
 			for i in range(len(line)):
