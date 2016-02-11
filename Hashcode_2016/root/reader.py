@@ -19,7 +19,8 @@ class Reader(object):
 		self.ORDERS = ORDERS
 
 class Warehouse(object):
-	def __init__(self, R, C, p):
+	def __init__(self, id, R, C, p):
+		self.ID = id
 		self.R = R # num rows
 		self.C = C # num slots per row
 		self.ITEMS = [0]*p
@@ -57,7 +58,7 @@ class Deliver(object):
 def readFile(filename):
 	index = 0
 	subIndex = 0
-	curWharehouse = 0
+	curWarehouse = 0
 	curOrder = 0
 	P =0
 	PRODUCT_WEIGHTS = []
@@ -78,11 +79,11 @@ def readFile(filename):
 			elif index == 3:
 				W = line[0]
 			elif index < 2*W + 4 and subIndex == 0:
-				WAREHOUSES.append(Warehouse(line[0], line[1], P))
+				WAREHOUSES.append(Warehouse(curWarehouse, line[0], line[1], P))
 				subIndex = 1
 			elif index < 2*W + 4 and subIndex == 1:
-				WAREHOUSES[curWharehouse].ITEMS = line
-				curWharehouse += 1
+				WAREHOUSES[curWarehouse].ITEMS = line
+				curWarehouse += 1
 				subIndex = 0
 			elif index == 2*W + 4:
 				C = line[0]
