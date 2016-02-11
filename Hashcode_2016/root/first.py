@@ -4,10 +4,10 @@ Created on 11 fvr. 2016
 @author: emmanuelcharon
 '''
 import math
-from reader import Reader, Warehouse, Order, Load, Deliver
+from reader import Reader, Warehouse, Order, Load, Deliver, readFile
 
 def dist(r1, c1, r2, c2):
-  return math.sqrt((r1-r2)*(r1-r2) + (c1-c2)(c1-c2))
+  return math.sqrt((r1-r2)*(r1-r2) + (c1-c2)*(c1-c2))
 
 class Drone(object):
   def __init__(self, reader, ID):
@@ -55,6 +55,8 @@ def doAllJobs(reader):
     avDrones = availableWorkers(reader, drones, t)
     
     for drone in avDrones:
+      if len(allJobs) == 0:
+        continue
       job = allJobs[0]
       
       closestWHindex = closestWwithP(job.productType, reader, drone.R, drone.C)
@@ -70,6 +72,7 @@ def doAllJobs(reader):
         wh.ITEMS[job.productType] -= 1
         commands.append(Deliver(drone.ID, job.orderID, job.productType, 1))
         drone.nextAvailableTime += jobTime
+  
   return commands
 
 #closest warehouse with an item of type productType
@@ -78,13 +81,13 @@ def closestWwithP(productType, reader, r, c):
   d = 1000*1000*1000
   closest = 0
   
-  for whID in range(len(reader.WARHOUSES)):
+  for whID in range(len(reader.WAREHOUSES)):
     wh = reader.WAREHOUSES[whID]
     
     if wh.ITEMS[productType] > 0:
       d_wh = dist(wh.R, wh.C, r, c)
       if d_wh < d:
-        closest = id
+        closest = whID
   return closest
 
   
@@ -99,9 +102,15 @@ def closestWwithP(productType, reader, r, c):
   # for this order, we can compute the num drones needed and the duration (max time for all drones) 
   # we choose a start time when all drones are available
   # remember for each drone the time when they get available  
-  
-  
 
 if __name__ == '__main__':
-  pass
+  filename = 'busy_day'
+  filename = 'mother_of_all_warehouses'
+  #filename = 'redundancy'
+  rd = readFile(filename)
+  commands = doAllJobs(rd)
+  with open(filename + '-result.txt', 'w') as f:
+    f.write(str(len(commands)) + "\n")
+    for com in commands:
+      f.write(com.printCommand() + "\n")
   

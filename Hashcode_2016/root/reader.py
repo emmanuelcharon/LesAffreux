@@ -2,14 +2,14 @@ import numpy as np
 import json
 import random
 
-filename = 'busy_day'
+
 
 class Reader(object):
-	def __init__(self, ROWS, COLS, D, DEADLINE, MAX_LOAD, P, PRODUCT_WEIGHTS, W, WAREHOUSES, C, ORDERS):
+	def __init__(self, ROWS, COLS, D, T, MAX_LOAD, P, PRODUCT_WEIGHTS, W, WAREHOUSES, C, ORDERS):
 		self.ROWS = ROWS 
 		self.COLS = COLS 
 		self.D = D # number of drones
-		self.DEADLINE = DEADLINE # time
+		self.T = T # time
 		self.MAX_LOAD = MAX_LOAD # per drone
 		self.P = P # number of product types
 		self.PRODUCT_WEIGHTS = PRODUCT_WEIGHTS # array of weigths
@@ -71,7 +71,7 @@ def readFile(filename):
 				line[i] = int(line[i])
 			if index == 0:
 				ROWS = line[0]; COLS = line[1]; D = line[2]
-				DEADLINE = line[3]; MAX_LOAD = line[4]
+				T = line[3]; MAX_LOAD = line[4]
 			elif index == 1:
 				P = line[0]
 			elif index == 2:
@@ -103,8 +103,4 @@ def readFile(filename):
 				subIndex = 0
 			index += 1
 
-	return Reader(ROWS, COLS, D, DEADLINE, MAX_LOAD, P, PRODUCT_WEIGHTS, W, WAREHOUSES, C, ORDERS)
-
-reader = readFile(filename)
-
-print reader.ORDERS[0].rawItems
+	return Reader(ROWS, COLS, D, T, MAX_LOAD, P, PRODUCT_WEIGHTS, W, WAREHOUSES, C, ORDERS)
