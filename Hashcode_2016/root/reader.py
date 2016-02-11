@@ -31,6 +31,25 @@ class Order(object):
 		self.L = 0 # num of items
 		self.ITEMS = [0] * p
 
+class Load(object):
+	def __init__(self, drone, warehouse, product, number):
+		self.drone = drone
+		self.warehouse = warehouse
+		self.product = product
+		self.number = number
+
+	def printCommand(self):
+		return str(self.drone) + ' L ' + str(self.warehouse) + ' ' + str(self.product) + ' ' + str(self.number)
+
+class Deliver(object):
+	def __init__(self, drone, order, product, number):
+		self.drone = drone
+		self.order = order
+		self.product = product
+		self.number = number
+
+	def printCommand(self):
+		return str(self.drone) + ' D ' + str(self.order) + ' ' + str(self.product) + ' ' + str(self.number)
 
 def readFile(filename):
 	index = 0
