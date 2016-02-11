@@ -7,6 +7,7 @@ Created on 11 fvr. 2016
 import numpy as np
 import json
 import random
+import random
 
 class Datacenter(object):
   def __init__(self, R, S, U, P, M):
