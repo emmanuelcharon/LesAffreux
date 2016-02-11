@@ -4,36 +4,43 @@ import random
 
 filename = 'busy_day'
 
-ROWS = 0; 
-COLS = 0; 
-D = 0; # number of drones
-DEADLINE = 0; # time
-MAX_LOAD = 0; # per drone
-P = 0; # number of product types
-PRODUCT_WEIGTHS = [] # array of weigths
-W = 0; # number of warehouses
-WAREHOUSES = [] # array of warehouses
-C = 0; # number of customer orders
-ORDERS = []
+class Reader(object):
+  def __init__(self, ROWS, COLS, D, DEADLINE, MAX_LOAD, P, PRODUCT_WEIGTHS, W, WAREHOUSES, C, ORDERS):
+  	self.ROWS = ROWS 
+	self.COLS = COLS 
+	self.D = D # number of drones
+	self.DEADLINE = DEADLINE # time
+	self.MAX_LOAD = MAX_LOAD # per drone
+	self.P = P # number of product types
+	self.PRODUCT_WEIGTHS = PRODUCT_WEIGTHS # array of weigths
+	self.W = W # number of warehouses
+	self.WAREHOUSES = WAREHOUSES # array of warehouses
+	self.C = C # number of customer orders
+	self.ORDERS = ORDERS
+
 
 class Warehouse(object):
-  def __init__(self, R, C):
+  def __init__(self, R, C, p):
     self.R = R # num rows
     self.C = C # num slots per row
-    self.ITEMS = [0]*P
+    self.ITEMS = [0]*p
 
 class Order(object):
-  def __init__(self, R, C):
+  def __init__(self, R, C, p):
     self.R = R # num rows
     self.C = C # num slots per row
     self.L = 0 # num of items
-    self.ITEMS = [0]*P
+    self.ITEMS = [0] * p
 
 def readFile(filename):
   index = 0
   subIndex = 0
   curWharehouse = 0
   curOrder = 0
+  P =0
+  PRODUCT_WEIGTHS = []
+  WAREHOUSES = []
+  ORDERS = []
   with open('data/' + filename + '.in') as f:
     for line in f:
     	line = line.split(' ')
@@ -49,7 +56,7 @@ def readFile(filename):
     	elif index == 3:
     	  W = line[0]
     	elif index < 2*W + 4 and subIndex == 0:
-    	  WAREHOUSES.append(Warehouse(line[0], line[1]))
+    	  WAREHOUSES.append(Warehouse(line[0], line[1], P))
     	  subIndex = 1
     	elif index < 2*W + 4 and subIndex == 1:
           WAREHOUSES[curWharehouse].ITEMS = line
@@ -59,18 +66,18 @@ def readFile(filename):
           C = line[0]
           subIndex = 0
         elif index < (2*W + 4 + 1 + 3 * C) and subIndex == 0:
-		  ORDERS.append(Order(line[0], line[1]))
+		  ORDERS.append(Order(line[0], line[1], P))
 		  subIndex = 1
     	elif index < (2*W + 4 + 1 + 3 * C) and subIndex == 1:
           ORDERS[curOrder].L = line[0]
           subIndex = 2
         elif index < (2*W + 4 + 1 + 3 * C) and subIndex == 2:
-          print P
           for i in range(len(line)):
-          	print ORDERS[curOrder].ITEMS
           	ORDERS[curOrder].ITEMS[line[i]] += 1
           curOrder += 1
           subIndex = 0
     	index += 1
 
-readFile(filename)
+  return Reader(ROWS, COLS, D, DEADLINE, MAX_LOAD, P, PRODUCT_WEIGTHS, W, WAREHOUSES, C, ORDERS)
+
+reader = readFile(filename)
