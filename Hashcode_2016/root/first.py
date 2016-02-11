@@ -46,6 +46,7 @@ def doAllJobs(reader):
     for item in order.rawItems:
       job = Job(order.R, order.C, item, order.ID)
       allJobs.append(job)
+  totalJobs = len(allJobs)
 
   drones = []
   for _ in range(0, reader.D):
@@ -106,7 +107,8 @@ def doAllJobs(reader):
        
        
       if len(allJobs) == 0:
-        continue
+        print "Finished all jobs at {}/{}={}".format(t, reader.T, t*1.0/reader.T)
+        return commands
        
       job = allJobs[0]
        
@@ -154,7 +156,9 @@ def doAllJobs(reader):
         drone.C = job.C
         drone.nextAvailableTime += jobTime + 1
         drone.weight = 0
-        
+      
+  print "Finished time with {}/{} remaining jobs".format(len(allJobs), totalJobs)
+          
   return commands
 
 #closest warehouse with an item of type productType
