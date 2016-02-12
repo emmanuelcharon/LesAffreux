@@ -176,7 +176,90 @@ def closestWwithP(productType, reader, r, c):
         closest = whID
   return closest
 
+def locationCompare(jobA, jobB):
+  if jobA.R < jobB.R:
+    return 1
+  elif jobA.R > jobB.R:
+    return-1
+  else: # same R
+    if jobA.C < jobB.C:
+      return 1
+    elif jobA.C > jobB.C:
+      return -1
+    else:
+      return cmp(jobA.weight, jobB.weight)
+    
+
+def secondAl(reader):
   
+  sortedOrders = reader.ORDERS[:]
+  #sortedOrders.sort(cmp=lambda x,y: cmp(x.weight, y.weight))
+  #sortedOrders.sort(cmp=lambda x,y: cmp(x.L, y.L))
+  sortedOrders.sort(cmp=lambda x,y: locationCompare(x, y))
+  #
+  
+  allJobs = []
+  for order in sortedOrders:
+    for item in order.rawItems:
+      job = Job(order.R, order.C, item, order.ID)
+      allJobs.append(job)
+  totalJobs = len(allJobs)
+
+  drones = []
+  for _ in range(0, reader.D):
+    drone = Drone(reader, _)
+    drones.append(drone)
+  
+  commands = []
+
+  for t in range(0, reader.T):
+    avDrones = availableWorkers(reader, drones, t)
+      
+    for drone in avDrones:
+      if len(allJobs) == 0:
+        print "Finished all jobs at {}/{}={}".format(t, reader.T, t*1.0/reader.T)
+        return commands
+       
+      job = allJobs[0]
+      closestWHindex = closestWwithP(job.productType, reader, drone.R, drone.C)
+      wh = reader.WAREHOUSES[closestWHindex]
+       
+      t1 = dist(drone.R, drone.C, wh.R, wh.C) 
+      t2 = dist(wh.R, wh.C, job.R, job.C) 
+      jobTime = t1 + t2 + 2
+       
+      if t + jobTime < reader.T:
+        tripJobs = [job]
+        peekIdx = 1
+        drone.weight = reader.PRODUCT_WEIGHTS[job.productType]
+        wh.ITEMS[job.productType] -= 1
+            
+        while peekIdx < len(allJobs) and allJobs[peekIdx].R == job.R and allJobs[peekIdx].C == job.C:
+          nextJob = allJobs[peekIdx]
+          if t + jobTime + 2 < reader.T and wh.ITEMS[nextJob.productType]>0 and reader.PRODUCT_WEIGHTS[nextJob.productType] + drone.weight<=reader.MAX_LOAD :
+            tripJobs.append(nextJob)
+            wh.ITEMS[nextJob.productType] -= 1
+            jobTime+=2
+            drone.weight += reader.PRODUCT_WEIGHTS[nextJob.productType]
+            peekIdx+=1  
+          else:
+            break
+        
+        for tripJob in tripJobs:
+          allJobs.pop(0)
+          commands.append(Load(drone.ID, closestWHindex, tripJob.productType, 1))
+        for tripJob in tripJobs:
+          commands.append(Deliver(drone.ID, tripJob.orderID, tripJob.productType, 1))
+        
+        drone.R = job.R
+        drone.C = job.C
+        drone.nextAvailableTime += jobTime + 1
+        drone.weight = 0
+      
+  print "Finished time with {}/{} remaining jobs".format(len(allJobs), totalJobs)
+          
+  return commands
+
   # find closest warehouse with item 0
   # then build the list of items this warehouse (still), this will be the last stop of the drone
   # go on to the next closest warehouse with the next missing item
