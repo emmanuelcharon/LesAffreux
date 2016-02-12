@@ -277,7 +277,7 @@ if __name__ == '__main__':
   for filename in filenames:
     rd = readFile(filename)
 
-    commands = doAllJobs(rd)
+    commands =  secondAl(rd)
     with open(filename + '-result.txt', 'w') as f:
       f.write(str(len(commands)) + "\n")
       for com in commands:
