@@ -192,17 +192,19 @@ def locationCompare(jobA, jobB):
 
 def secondAl(reader):
   
+  maxJobComparisons = 1000
+  
   sortedOrders = reader.ORDERS[:]
-  #sortedOrders.sort(cmp=lambda x,y: cmp(x.weight, y.weight))
+  sortedOrders.sort(cmp=lambda x,y: cmp(x.weight, y.weight))
   #sortedOrders.sort(cmp=lambda x,y: cmp(x.L, y.L))
-  sortedOrders.sort(cmp=lambda x,y: locationCompare(x, y))
-  #
+  #sortedOrders.sort(cmp=lambda x,y: locationCompare(x, y))
+  
   
   allJobs = []
   for order in sortedOrders:
     for item in order.rawItems:
-      job = Job(order.R, order.C, item, order.ID)
-      allJobs.append(job)
+      _job = Job(order.R, order.C, item, order.ID)
+      allJobs.append(_job)
   totalJobs = len(allJobs)
 
   drones = []
@@ -213,46 +215,66 @@ def secondAl(reader):
   commands = []
 
   for t in range(0, reader.T):
+    if t%1000==0:
+      print "t="+str(t)
+    
     avDrones = availableWorkers(reader, drones, t)
       
     for drone in avDrones:
       if len(allJobs) == 0:
         print "Finished all jobs at {}/{}={}".format(t, reader.T, t*1.0/reader.T)
         return commands
+      
+      bestJobIdx = -1
+      bestTime = 1000*1000*1000.0
+      bestWHindex = -1
+      
+      # find the job that will cost least to the drone 
+      for idx in range(0, min([len(allJobs), maxJobComparisons])):
+        _job = allJobs[idx]
+        _closestWHindex = closestWwithP(_job.productType, reader, drone.R, drone.C)
+        _wh = reader.WAREHOUSES[_closestWHindex]
        
-      job = allJobs[0]
-      closestWHindex = closestWwithP(job.productType, reader, drone.R, drone.C)
-      wh = reader.WAREHOUSES[closestWHindex]
-       
-      t1 = dist(drone.R, drone.C, wh.R, wh.C) 
-      t2 = dist(wh.R, wh.C, job.R, job.C) 
-      jobTime = t1 + t2 + 2
-       
-      if t + jobTime < reader.T:
-        tripJobs = [job]
-        peekIdx = 1
-        drone.weight = reader.PRODUCT_WEIGHTS[job.productType]
-        wh.ITEMS[job.productType] -= 1
-            
-        while peekIdx < len(allJobs) and allJobs[peekIdx].R == job.R and allJobs[peekIdx].C == job.C:
-          nextJob = allJobs[peekIdx]
-          if t + jobTime + 2 < reader.T and wh.ITEMS[nextJob.productType]>0 and reader.PRODUCT_WEIGHTS[nextJob.productType] + drone.weight<=reader.MAX_LOAD :
-            tripJobs.append(nextJob)
-            wh.ITEMS[nextJob.productType] -= 1
-            jobTime+=2
-            drone.weight += reader.PRODUCT_WEIGHTS[nextJob.productType]
-            peekIdx+=1  
+        t1 = dist(drone.R, drone.C, _wh.R, _wh.C) 
+        t2 = dist(_wh.R, _wh.C, _job.R, _job.C) 
+        _jobTime = t1 + t2 + 2
+        
+        if t + _jobTime < reader.T and _jobTime < bestTime:
+          bestJobIdx = idx
+          bestTime = _jobTime
+          bestWHindex = _closestWHindex
+      
+      if bestJobIdx>=0:
+        bestJob = allJobs[bestJobIdx]
+        jobTime = bestTime
+        tripJobsIndexes = [bestJobIdx]
+        drone.weight = reader.PRODUCT_WEIGHTS[bestJob.productType]
+        wh = reader.WAREHOUSES[bestWHindex]
+        wh.ITEMS[bestJob.productType] -= 1
+        
+        for idx in range(0, min([len(allJobs), maxJobComparisons])):
+          if idx == bestJobIdx:
+            continue
+          nextJob = allJobs[idx]
+          if nextJob.R == bestJob.R and nextJob.C == bestJob.C and t+jobTime+2<reader.T and wh.ITEMS[nextJob.productType]>0:
+            if reader.PRODUCT_WEIGHTS[nextJob.productType] + drone.weight<=reader.MAX_LOAD:
+              tripJobsIndexes.append(idx)
+              wh.ITEMS[nextJob.productType] -= 1
+              jobTime+=2
+              drone.weight += reader.PRODUCT_WEIGHTS[nextJob.productType]
           else:
             break
         
+        tripJobs = []
+        for idx in sorted(tripJobsIndexes, reverse=True):
+          tripJobs.append(allJobs.pop(idx))
         for tripJob in tripJobs:
-          allJobs.pop(0)
-          commands.append(Load(drone.ID, closestWHindex, tripJob.productType, 1))
+          commands.append(Load(drone.ID, bestWHindex, tripJob.productType, 1))
         for tripJob in tripJobs:
           commands.append(Deliver(drone.ID, tripJob.orderID, tripJob.productType, 1))
         
-        drone.R = job.R
-        drone.C = job.C
+        drone.R = bestJob.R
+        drone.C = bestJob.C
         drone.nextAvailableTime += jobTime + 1
         drone.weight = 0
       
